@@ -56,6 +56,7 @@ public class PlayerController : MonoBehaviour
     [Header("Other")]
     [SerializeField] private GameObject goldBag;
     [SerializeField] private GameObject spawnOffset;
+    [SerializeField] private Animator anim;
 
     private void Start()
     {
@@ -70,6 +71,7 @@ public class PlayerController : MonoBehaviour
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
+        //anim.SetFloat("weaponIndex", 2);
     }
 
     private void Update()
@@ -93,6 +95,27 @@ public class PlayerController : MonoBehaviour
         else
         {
             rb.drag = 0;
+        }
+
+        if (isHidden)
+        {
+            for (int i = 0; i < weaponList.Count; i++)
+            {
+                weaponList[i].SetActive(false);
+            }
+            //anim.SetFloat("weaponIndex", 2);
+        }
+        else
+        {
+            SwitchWeapon();
+            /*if(weaponIndex == 0)
+            {
+                anim.SetFloat("weaponIndex", 0);
+            }
+            else
+            {
+                anim.SetFloat("weaponIndex", 1);
+            }*/
         }
     }
 
@@ -125,13 +148,24 @@ public class PlayerController : MonoBehaviour
             isRunning = false;
         }
 
-        if (!isCarrying)
-        {
-            DetectGoldBags();
-        }
-
         if (!isHidden)
         {
+            if (!isCarrying)
+            {
+                DetectGoldBags();
+            }
+
+            if (Input.GetAxis("Mouse ScrollWheel") < 0)
+            {
+                weaponIndex--;
+                ClampIndex();
+            }
+            else if (Input.GetAxis("Mouse ScrollWheel") > 0)
+            {
+                weaponIndex++;
+                ClampIndex();
+            }
+
             //Shoot
             if (Input.GetButton("Fire1"))
             {
@@ -139,9 +173,9 @@ public class PlayerController : MonoBehaviour
                 {
                     weaponList[weaponIndex].GetComponent<Rifle>().StartCoroutine("Shoot");
                 }
-                else
+                else if(weaponIndex == 1 && weaponList[weaponIndex].GetComponent<Pistol>().canShoot)
                 {
-                    //weaponList[weaponIndex].GetComponent<Pistol>().StartCoroutine(Shoot());
+                    weaponList[weaponIndex].GetComponent<Pistol>().StartCoroutine("Shoot");
                 }
                 
             }
@@ -151,9 +185,9 @@ public class PlayerController : MonoBehaviour
                 {
                     weaponList[weaponIndex].GetComponent<Rifle>().StartCoroutine("Reload");
                 }
-                else
+                else if(weaponIndex == 1 && weaponList[weaponIndex].GetComponent<Pistol>().canShoot)
                 {
-                    //weaponList[weaponIndex].GetComponent<Pistol>().StartCoroutine(Reload());
+                    weaponList[weaponIndex].GetComponent<Pistol>().StartCoroutine("Reload");
                 }
         }
     }
@@ -162,14 +196,27 @@ public class PlayerController : MonoBehaviour
     {
         // calculate movement direction
         moveDirection = orientation.forward * verticalInput + orientation.right * horizontalInput;
+        /*if(moveDirection == Vector3.zero)
+        {
+            anim.SetBool("Idle", true);
+        }
+        else
+        {
+            anim.SetBool("Walk", true);
+            if (isRunning)
+            {
+                anim.SetBool("Run", true);
+            }
+        }*/
 
-        // on ground
         if (grounded)
+        {
             rb.AddForce(moveDirection.normalized * moveSpeed * 10f, ForceMode.Force);
-
-        // in air
+        }
         else if (!grounded)
+        {
             rb.AddForce(moveDirection.normalized * moveSpeed * 10f * airMultiplier, ForceMode.Force);
+        }
     }
 
     private void SpeedControl()
@@ -239,6 +286,32 @@ public class PlayerController : MonoBehaviour
             {
                 canTakeText.enabled = false;
             }
+        }
+    }
+
+    private void ClampIndex()
+    {
+        if(weaponIndex < 0)
+        {
+            weaponIndex = 0;
+        }
+        else if(weaponIndex > 1)
+        {
+            weaponIndex = 1;
+        }
+    }
+
+    private void SwitchWeapon()
+    {
+        if(weaponIndex == 0)
+        {
+            weaponList[weaponIndex].SetActive(true);
+            weaponList[1].SetActive(false);
+        }
+        else
+        {
+            weaponList[0].SetActive(false);
+            weaponList[weaponIndex].SetActive(true);
         }
     }
 }
