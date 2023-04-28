@@ -49,9 +49,14 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private bool isRunning;
     [SerializeField] private bool isCarrying;
     [SerializeField] private bool isHidden;
+    private bool isDead;
 
     [Header("UI")]
     [SerializeField] private TMP_Text canTakeText;
+
+    [Header("Health")]
+    [SerializeField] private int health;
+    [SerializeField] private int maxHealth;
 
     [Header("Other")]
     [SerializeField] private GameObject goldBag;
@@ -71,51 +76,49 @@ public class PlayerController : MonoBehaviour
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
-        //anim.SetFloat("weaponIndex", 2);
     }
 
     private void Update()
     {
-        transform.Rotate(0, Input.GetAxis("Mouse X") * sensitivity, 0);
-        xRotation -= Input.GetAxis("Mouse Y") * sensitivity;
-        xRotation = Mathf.Clamp(xRotation, -maxUp, maxDown);
-        camera.localRotation = Quaternion.Euler(xRotation, 0, 0);
-
-        // ground check
-        grounded = Physics.Raycast(transform.position, Vector3.down, playerHeight * 0.5f + 0.3f, whatIsGround);
-
-        CheckInput();
-        SpeedControl();
-
-        // handle drag
-        if (grounded)
+        if(!isDead)
         {
-            rb.drag = groundDrag;
-        }
-        else
-        {
-            rb.drag = 0;
-        }
+            transform.Rotate(0, Input.GetAxis("Mouse X") * sensitivity, 0);
+            xRotation -= Input.GetAxis("Mouse Y") * sensitivity;
+            xRotation = Mathf.Clamp(xRotation, -maxUp, maxDown);
+            camera.localRotation = Quaternion.Euler(xRotation, 0, 0);
 
-        if (isHidden)
-        {
-            for (int i = 0; i < weaponList.Count; i++)
+            // ground check
+            grounded = Physics.Raycast(transform.position, Vector3.down, playerHeight * 0.5f + 0.3f, whatIsGround);
+
+            CheckInput();
+            SpeedControl();
+
+            // handle drag
+            if (grounded)
             {
-                weaponList[i].SetActive(false);
-            }
-            //anim.SetFloat("weaponIndex", 2);
-        }
-        else
-        {
-            SwitchWeapon();
-            /*if(weaponIndex == 0)
-            {
-                anim.SetFloat("weaponIndex", 0);
+                rb.drag = groundDrag;
             }
             else
             {
-                anim.SetFloat("weaponIndex", 1);
-            }*/
+                rb.drag = 0;
+            }
+
+            if (isHidden)
+            {
+                for (int i = 0; i < weaponList.Count; i++)
+                {
+                    weaponList[i].SetActive(false);
+                }
+            }
+            else
+            {
+                SwitchWeapon();
+            }
+
+            if(Input.GetKeyDown(KeyCode.F))
+            {
+                isHidden = !isHidden;
+            }
         }
     }
 
@@ -196,18 +199,6 @@ public class PlayerController : MonoBehaviour
     {
         // calculate movement direction
         moveDirection = orientation.forward * verticalInput + orientation.right * horizontalInput;
-        /*if(moveDirection == Vector3.zero)
-        {
-            anim.SetBool("Idle", true);
-        }
-        else
-        {
-            anim.SetBool("Walk", true);
-            if (isRunning)
-            {
-                anim.SetBool("Run", true);
-            }
-        }*/
 
         if (grounded)
         {
@@ -312,6 +303,25 @@ public class PlayerController : MonoBehaviour
         {
             weaponList[0].SetActive(false);
             weaponList[weaponIndex].SetActive(true);
+        }
+    }
+
+    private void TakeDamage(int damage)
+    {
+        health -= damage;
+        ClampHealth();
+    }
+
+    private void ClampHealth()
+    {
+        if(health < 0)
+        {
+            health = 0;
+            isDead = true;
+        }
+        else if(health > maxHealth)
+        {
+            health = maxHealth;
         }
     }
 }
